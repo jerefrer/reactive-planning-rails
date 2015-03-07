@@ -17,4 +17,6 @@ group :development, :test do
     gem 'spring'
 end
 
-gem 'react-rails', '~> 0.12.0.0'
+gem 'react-rails', '~> 0.12.2'
+gem 'sprockets-coffee-react'
+gem 'bootstrap-sass', '~> 3.3.3'
