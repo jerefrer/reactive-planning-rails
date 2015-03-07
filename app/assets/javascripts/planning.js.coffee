@@ -3,74 +3,58 @@
 DragDropMixin = ReactDND.DragDropMixin
 ItemTypes = { PERSON: 'person' }
 
-k = (object) ->
-  key = object.id
-  key
+randomId = ->
+  Math.random().toString(36).substr(2, 16)
 
-guid = ->
-  s4 = ->
-    Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1)
-  s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
+clone = (object) ->
+  jQuery.extend(true, {}, object)
+
+getDuty = (duties, day, task) ->
+  duties.find({day: day, task: task})
 
 getPersons = (duties, day, task) ->
-  tasksForDay = duties[k(day)]
-  tasksForDay[k(task)] if (tasksForDay)
+  if duty = getDuty(duties, day, task)
+    duty.people
 
 addPersonToDuties = (duties, day, task, person) ->
-  duties[k(day)] = [] unless duties[k(day)]
-  persons = duties[k(day)][k(task)]
-  persons = [] unless persons
-  if persons.indexOf(person) == -1
-    persons.push(person)
-    duties[k(day)][k(task)] = persons
-    duties
+  if duty = getDuty(duties, day, task)
+    if duty.people.indexOf(person) == -1
+      duty.people.push(person)
+  else
+    duties.push({day: day, task: task, people: [person]})
+  duties
 
 removePersonFromDuties = (duties, day, task, person) ->
-  if duties[k(day)] && duties[k(day)][k(task)]
-    persons = duties[k(day)][k(task)]
-    persons.remove(person)
-    duties[k(day)][k(task)] = persons
-    duties
+  if duty = getDuty(duties, day, task)
+    duty.people.remove(person)
+  duties
 
-replaceDayName = (days, id, name) ->
-  day = days.find({id: id})
-  afterCutIncludingDay = days.splice(days.indexOf(day))
+replaceDayNameInDays = (days, oldDay, dayName) ->
+  newDay = clone(oldDay)
+  newDay.name = dayName
+  afterCutIncludingDay = days.splice(days.indexOf(oldDay))
   afterCut = afterCutIncludingDay.splice(1)
-  days.concat([{id: id, name: name}].concat(afterCut))
+  days.concat([newDay].concat(afterCut))
 
-tasks = [
-  {id: guid(), name: "Banque alimentaire"},
-  {id: guid(), name: "Médiateur, responsable d'équipe"},
-  {id: guid(), name: "Chercher pain"}
-]
-
-days = [
-  {id: guid(), name: "Samedi 7 Mars 2015"},
-  {id: guid(), name: "Dimanche 8 Mars 2015"},
-  {id: guid(), name: "Samedi 14 Mars 2015"},
-  {id: guid(), name: "Dimanche 15 Mars 2015"}
-]
-
-people = [
-  {name: 'Anne'},
-  {name: 'Jérémy'}
-]
-
-duties = []
-duties[k(days[0])] = []
-duties[k(days[0])][k(tasks[0])] = [
-  people[0],
-  people[1]
-]
-
-duties[k(days[2])] = []
-duties[k(days[2])][k(tasks[0])] = [
-  people[1]
-]
+replaceDayNameInDuties = (duties, oldDay, dayName) ->
+  newDay = clone(oldDay)
+  newDay.name = dayName
+  duties.findAll({day: oldDay}).forEach (duty) ->
+    duty.day = newDay
+  duties
 
 Scheduler = React.createClass
+  loadTasksFromServer: ->
+    $.ajax
+      url: @props.tasks_url,
+      dataType: 'json',
+      success: ( (data) ->
+        @setState
+          data: data
+      ).bind(@)
+      error: ( (xhr, status, err) ->
+        console.error(@props.url, status, err.toString())
+      ).bind(@)
   render: ->
     (
       <div className="row">
@@ -101,24 +85,21 @@ Schedule = React.createClass
     @setState({duties: duties})
   handleAddDay: (dayName) ->
     days = @state.days
-    new_id = days.max('id').id + 1
-    days.push({id: new_id, name: dayName})
+    days.push({id: {$oid: randomId()}, name: dayName})
     @setState({days: days})
-  handleUpdateDayName:  (id, dayName) ->
-    days = replaceDayName(@state.days, id, dayName)
-    @setState({days: days})
+  handleUpdateDayName:  (day, dayName) ->
+    days = replaceDayNameInDays(@state.days, day, dayName)
+    duties = replaceDayNameInDuties(@state.duties, day, dayName)
+    @setState
+      days: days
+      duties: duties
   render: ->
     lines = []
-    tasks = @props.tasks
-    duties = @state.duties
-    handleDutyCreation = @handleDutyCreation
-    removeFromDuties = @removeFromDuties
-    handleUpdateDayName = @handleUpdateDayName
-    @state.days.forEach (day) ->
-      lines.push(<ScheduleLine tasks={tasks} day={day} duties={duties} onPersonDrop={handleDutyCreation} removeFromDuties={removeFromDuties} handleUpdateDayName={handleUpdateDayName} />)
+    @state.days.forEach (day) =>
+      lines.push(<ScheduleLine tasks={@props.tasks} day={day} duties={@props.duties} onPersonDrop={@handleDutyCreation} removeFromDuties={@removeFromDuties} handleUpdateDayName={@handleUpdateDayName} />)
     <table className="table table-striped table-bordered">
       <thead>
-        <ScheduleHeader tasks={tasks} />
+        <ScheduleHeader tasks={@props.tasks} />
       </thead>
       <tbody>
         {lines}
@@ -142,14 +123,11 @@ ScheduleHeader = React.createClass
 
 ScheduleLine = React.createClass
   render: ->
-    day = @props.day
     cells = []
-    onPersonDrop = @props.onPersonDrop
-    removeFromDuties = @props.removeFromDuties
-    @props.tasks.forEach (task) ->
-      cells.push(<ScheduleCell day={day} task={task} duties={duties} onPersonDrop={onPersonDrop} removeFromDuties={removeFromDuties} />)
+    @props.tasks.forEach (task) =>
+      cells.push(<ScheduleCell day={@props.day} task={task} duties={@props.duties} onPersonDrop={@props.onPersonDrop} removeFromDuties={@props.removeFromDuties} />)
     <tr>
-      <td><DayName day={day} onUpdateDayName={@props.handleUpdateDayName} /></td>
+      <td><DayName day={@props.day} onUpdateDayName={@props.handleUpdateDayName} /></td>
       {cells}
     </tr>
 
@@ -164,7 +142,7 @@ DayName = React.createClass
       formIsVisible: false
   updateDayName: (dayName) ->
     @hideForm()
-    @props.onUpdateDayName(@props.day.id, dayName)
+    @props.onUpdateDayName(@props.day, dayName)
   render: ->
     if (@state.formIsVisible)
       <DayForm onSubmit={@updateDayName} onCancel={@hideForm} />
@@ -261,6 +239,11 @@ PeopleList = React.createClass
     <ul className="list-unstyled">{people}</ul>
 
 ready = ->
+  days = $('#planning').data('days')
+  tasks = $('#planning').data('tasks')
+  people = $('#planning').data('people')
+  duties = $('#planning').data('duties')
+
   React.render(
     <Scheduler tasks={tasks} days={days} duties={duties} people={people}/>,
     document.getElementById('planning'))
