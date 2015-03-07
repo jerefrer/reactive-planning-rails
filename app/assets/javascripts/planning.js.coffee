@@ -3,6 +3,9 @@
 DragDropMixin = ReactDND.DragDropMixin
 ItemTypes = { PERSON: 'person' }
 
+id = (object) ->
+  object._id.$oid
+
 randomId = ->
   Math.random().toString(36).substr(2, 16)
 
@@ -15,14 +18,6 @@ getDuty = (duties, day, task) ->
 getPersons = (duties, day, task) ->
   if duty = getDuty(duties, day, task)
     duty.people
-
-addPersonToDuties = (duties, day, task, person) ->
-  if duty = getDuty(duties, day, task)
-    if duty.people.indexOf(person) == -1
-      duty.people.push(person)
-  else
-    duties.push({day: day, task: task, people: [person]})
-  duties
 
 removePersonFromDuties = (duties, day, task, person) ->
   if duty = getDuty(duties, day, task)
@@ -44,23 +39,12 @@ replaceDayNameInDuties = (duties, oldDay, dayName) ->
   duties
 
 Scheduler = React.createClass
-  loadTasksFromServer: ->
-    $.ajax
-      url: @props.tasks_url,
-      dataType: 'json',
-      success: ( (data) ->
-        @setState
-          data: data
-      ).bind(@)
-      error: ( (xhr, status, err) ->
-        console.error(@props.url, status, err.toString())
-      ).bind(@)
   render: ->
     (
       <div className="row">
         <div className="col-md-9">
           <h2>Planning</h2>
-          <Schedule tasks={@props.tasks} days={@props.days} duties={@props.duties} />
+          <Schedule tasks={@props.tasks} days={@props.days} duties={@props.duties} days_url={@props.days_url} duties_url={@props.duties_url} />
         </div>
         <div className="col-md-3">
           <h2>Bénévoles</h2>
@@ -74,19 +58,45 @@ Schedule = React.createClass
   getInitialState: ->
     days: @props.days,
     duties: @props.duties
+  addPersonToDuties: (duties, day, task, person) ->
+    if duty = getDuty(duties, day, task)
+      unless duty.people.find(person)
+        duty.people.push(person)
+    else
+      duties.push({day: day, task: task, people: [person]})
+    duties
+  addPersonToDutiesOnServer: (day, task, person) ->
+    $.ajax
+      type: "POST"
+      url: @props.duties_url
+      dataType: 'json'
+      data:
+        day_id: id(day),
+        task_id: id(task),
+        person_id: id(person)
   handleDutyCreation:  (day, task, person) ->
-    duties = addPersonToDuties(@state.duties, day, task, person)
+    duties = @addPersonToDuties(@state.duties, day, task, person)
     if person.scheduleCell
       cell = person.scheduleCell
       duties = removePersonFromDuties(duties, cell.props.day, cell.props.task, person)
-    @setState({duties: duties})
+    @setState
+      duties: duties
+    @addPersonToDutiesOnServer(day, task, person)
   removeFromDuties:  (scheduleCell, person) ->
     duties = removePersonFromDuties(@state.duties, scheduleCell.props.day, scheduleCell.props.task, person)
     @setState({duties: duties})
   handleAddDay: (dayName) ->
-    days = @state.days
-    days.push({id: {$oid: randomId()}, name: dayName})
-    @setState({days: days})
+    $.ajax
+      type: "POST"
+      url: @props.days_url
+      dataType: 'json'
+      data:
+        name: dayName
+      success: (day) =>
+        days = @state.days
+        days.push(day)
+        @setState
+          days: days
   handleUpdateDayName:  (day, dayName) ->
     days = replaceDayNameInDays(@state.days, day, dayName)
     duties = replaceDayNameInDuties(@state.duties, day, dayName)
@@ -243,9 +253,11 @@ ready = ->
   tasks = $('#planning').data('tasks')
   people = $('#planning').data('people')
   duties = $('#planning').data('duties')
+  days_url = $('#planning').data('days-url')
+  duties_url = $('#planning').data('duties-url')
 
   React.render(
-    <Scheduler tasks={tasks} days={days} duties={duties} people={people}/>,
+    <Scheduler tasks={tasks} days={days} duties={duties} people={people} days_url={days_url} duties_url={duties_url} />,
     document.getElementById('planning'))
 
 $(document).ready(ready)
