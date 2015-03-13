@@ -3,7 +3,7 @@
 Schedule = require('./Schedule')
 PeopleList = require('./PeopleList')
 
-Scheduler = React.createClass
+window.Scheduler = React.createClass
   render: ->
     (
       <div className="row">
@@ -17,18 +17,3 @@ Scheduler = React.createClass
         </div>
       </div>
     )
-
-ready = ->
-  days = $('#planning').data('days')
-  tasks = $('#planning').data('tasks')
-  people = $('#planning').data('people')
-  duties = $('#planning').data('duties')
-  days_url = $('#planning').data('days-url')
-  duties_url = $('#planning').data('duties-url')
-
-  React.render(
-    <Scheduler tasks={tasks} days={days} duties={duties} people={people} days_url={days_url} duties_url={duties_url} />,
-    document.getElementById('planning'))
-
-$(document).ready(ready)
-$(document).on('page:load', ready)

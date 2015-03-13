@@ -1,10 +1,10 @@
 class PlanningController < ApplicationController
 
   def show
-    @days = Day.all.to_json
-    @tasks = Task.all.to_json
-    @people = Person.all.to_json
-    @duties = Duty.all.to_json
+    @days = Day.all
+    @tasks = Task.all
+    @people = Person.all
+    @duties = Duty.all
   end
 
 end

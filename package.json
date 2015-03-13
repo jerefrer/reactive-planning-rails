@@ -3,7 +3,9 @@
   "devDependencies" : {
     "browserify": "~8.1.0",
     "browserify-incremental": "^1.5.0",
-    "coffee-reactify": "~> 2.4.1"
+    "coffee-reactify": "~> 2.4.1",
+    "react-dnd": "~> 0.9.6",
+    "sugar": "~> 1.4.1"
   },
   "license": "MIT",
   "engines": {

@@ -1,0 +1,9 @@
+<%= react_component('Scheduler', {
+                      days: @days,
+                      tasks: @tasks,
+                      people: @people,
+                      duties: @duties,
+                      days_url: days_path,
+                      duties_url: duties_path,
+                    },
+                    { prerender: params[:noprerender].nil? }) %>
