@@ -13,7 +13,7 @@ Schedule = React.createClass
     duties: @props.duties
   addPersonToDuties: (duties, day, task, person) ->
     if duty = getDuty(duties, day, task)
-      unless duty.people.find(person)
+      unless duty.people.find({_id: {$oid: person._id.$oid}})
         duty.people.push(person)
     else
       duties.push({day: day, task: task, people: [person]})
