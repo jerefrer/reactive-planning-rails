@@ -5,7 +5,7 @@ Rails.application.routes.draw do
   resources :people
   resources :duties do
     collection do
-      post :destroy
+      post :delete
     end
   end
 

@@ -11,6 +11,7 @@ Bundler.require(*Rails.groups)
 
 module ReactivePlanning
   class Application < Rails::Application
+    config.react.addons = true
     config.browserify_rails.commandline_options = "-t coffee-reactify --extension=\".js.cjsx\""
   end
 end

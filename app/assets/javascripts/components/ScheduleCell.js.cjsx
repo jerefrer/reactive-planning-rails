@@ -22,13 +22,11 @@ ScheduleCell = React.createClass
             component.handlePersonDrop(person)
       })
   render: ->
-    self = @
     peopleList = getPersons(@props.duties, @props.day, @props.task)
     people = ''
-    removePerson = @removePerson
     if (peopleList)
-      people = peopleList.map (person) ->
-        <Person person={person} scheduleCell={self} onThrowAway={removePerson}/>
+      people = peopleList.map (person) =>
+        <Person person={person} scheduleCell={@} onThrowAway={@removePerson}/>
     dropState = @getDropState(ItemTypes.PERSON)
     className = ''
     className = 'hover' if dropState.isHovering

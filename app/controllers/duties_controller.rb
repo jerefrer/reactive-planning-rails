@@ -6,15 +6,15 @@ class DutiesController < ApplicationController
     unless @duty.people.include?(@person)
       @duty.people += [@person]
     end
-    render nothing: true
+    render json: Duty.all.to_json
   end
 
-  def destroy
+  def delete
     set_day_task_person_and_duty
     if @duty
       @duty.people -= [@person]
     end
-    render nothing: true
+    render json: Duty.all.to_json
   end
 
 private

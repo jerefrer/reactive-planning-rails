@@ -12,6 +12,7 @@ Schedule = React.createClass
     days: @props.days,
     duties: @props.duties
   addPersonToDuties: (duties, day, task, person) ->
+    person.disabled = true
     if duty = getDuty(duties, day, task)
       unless duty.people.find({_id: {$oid: person._id.$oid}})
         duty.people.push(person)
@@ -27,11 +28,15 @@ Schedule = React.createClass
         day_id: id(day),
         task_id: id(task),
         person_id: id(person)
+      success: (duties) =>
+        @setState
+          duties: duties
   handleDutyCreation: (day, task, person) ->
     duties = @addPersonToDuties(@state.duties, day, task, person)
     if person.scheduleCell
       cell = person.scheduleCell
       duties = @removePersonFromDuties(duties, cell.props.day, cell.props.task, person)
+      @removePersonFromDutiesOnServer(cell.props.day, cell.props.task, person)
     @setState
       duties: duties
     @addPersonToDutiesOnServer(day, task, person)
@@ -42,12 +47,15 @@ Schedule = React.createClass
   removePersonFromDutiesOnServer: (day, task, person) ->
     $.ajax
       type: 'POST'
-      url: @props.duties_url
+      url: @props.delete_duty_url
       dataType: 'json'
       data:
         day_id: id(day),
         task_id: id(task),
         person_id: id(person)
+      success: (duties) =>
+        @setState
+          duties: duties
   handleDutyRemoval: (scheduleCell, person) ->
     duties = @removePersonFromDuties(@state.duties, scheduleCell.props.day, scheduleCell.props.task, person)
     @setState({duties: duties})
@@ -73,7 +81,7 @@ Schedule = React.createClass
   render: ->
     lines = []
     @state.days.forEach (day) =>
-      lines.push(<ScheduleLine tasks={@props.tasks} day={day} duties={@props.duties} onPersonDrop={@handleDutyCreation} removeFromDuties={@handleDutyRemoval} handleUpdateDayName={@handleUpdateDayName} />)
+      lines.push(<ScheduleLine tasks={@props.tasks} day={day} duties={@state.duties} onPersonDrop={@handleDutyCreation} removeFromDuties={@handleDutyRemoval} handleUpdateDayName={@handleUpdateDayName} />)
     <table className="table table-striped table-bordered">
       <thead>
         <ScheduleHeader tasks={@props.tasks} />

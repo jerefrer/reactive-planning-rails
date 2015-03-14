@@ -20,10 +20,17 @@ Person = React.createClass
             if (!effect) # If throwing away
               component.props.onThrowAway(component.props.person)
       })
+  classes: ->
+    cx = React.addons.classSet
+    classes = cx
+      'alert': true
+      'alert-info': true
+      'text-center': true
+      disabled: @props.person.disabled
   render: ->
-    <div className="alert alert-info text-center"
-         {...this.dragSourceFor(ItemTypes.PERSON)} >
-      {this.props.person.name}
+    <div className={@classes()}
+         {...@dragSourceFor(ItemTypes.PERSON)} >
+      {@props.person.name}
     </div>
 
 module.exports = Person
